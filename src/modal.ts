@@ -150,9 +150,19 @@ export class ChatModal extends Modal {
 			this.is_generating_answer = true;
 
 			const chatPrompt = `USER: ${this.prompt_text}.\n\nASSISTANT:\n`;
+			const prompt = {
+				role: "user",
+				content: this.prompt_text,
+			};
+
+			this.prompt_table.push(prompt, {
+				role: "assistant",
+			});
+
 			this.clearModalContent();
 			await this.displayModalContent();
 
+			this.prompt_table.pop();
 			const answers =
 				this.modalEl.getElementsByClassName("chat-div assistant");
 			const view = this.app.workspace.getActiveViewOfType(
