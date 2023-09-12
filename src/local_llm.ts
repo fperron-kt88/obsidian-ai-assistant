@@ -11,7 +11,8 @@ export class LocalLLM {
 	api_call = async (
         prompt : string,
         htmlEl?: any, // fix this type issue.
-		view?: MarkdownView
+		view?: MarkdownView,
+		num_tokens : number = this.maxTokens
 	) => {
 		const streamMode = htmlEl !== undefined;
 
@@ -24,7 +25,7 @@ export class LocalLLM {
 						"Content-Type": "application/json",
 					},
 					body: JSON.stringify({
-						max_tokens: this.maxTokens,
+						max_tokens: num_tokens,
                         prompt : prompt,
 						stream: streamMode,
 					}),

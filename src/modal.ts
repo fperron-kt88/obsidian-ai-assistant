@@ -130,6 +130,7 @@ export class PromptModal extends Modal {
 
 export class ChatModal extends Modal {
 	prompt_text: string;
+	num_tokens : number;
 	prompt_table: { [key: string]: string }[] = [];
 	local_llm: LocalLLM;
 	is_generating_answer: boolean;
@@ -143,6 +144,7 @@ export class ChatModal extends Modal {
 	clearModalContent() {
 		this.contentEl.innerHTML = "";
 		this.prompt_text = "";
+		this.num_tokens = 0;
 	}
 
 	send_action = async () => {
@@ -171,7 +173,8 @@ export class ChatModal extends Modal {
 			const answer = await this.local_llm.api_call(
 				chatPrompt,
 				answers[answers.length - 1],
-				view
+				view,
+				this.num_tokens > 0 ? this.num_tokens : undefined
 			);
 			if (answer) {
 				this.prompt_table.push({
@@ -222,6 +225,14 @@ export class ChatModal extends Modal {
 			.addText((text) => {
 				text.setPlaceholder("Your prompt here").onChange((value) => {
 					this.prompt_text = value.trim();
+				});
+			});
+
+		const tokens_field = new Setting(contentEl)
+			.setName("How many tokens would you want:" )
+			.addText((text) => {
+				text.setPlaceholder("Your tokens here").onChange((value) => {
+					this.num_tokens = parseInt(value.trim());
 				});
 			});
 
