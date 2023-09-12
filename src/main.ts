@@ -6,12 +6,10 @@ import {
 	PluginSettingTab,
 	Setting,
 } from "obsidian";
-import { ChatModal, ImageModal, PromptModal, SpeechModal } from "./modal";
-import { OpenAI } from "./openai_api";
-
+import { ChatModal, PromptModal } from "./modal";
+import { LocalLLM } from "./local_llm";
 interface AiAssistantSettings {
 	mySetting: string;
-	apiKey: string;
 	modelName: string;
 	maxTokens: number;
 	replaceSelection: boolean;
@@ -21,7 +19,6 @@ interface AiAssistantSettings {
 
 const DEFAULT_SETTINGS: AiAssistantSettings = {
 	mySetting: "default",
-	apiKey: "",
 	modelName: "gpt-3.5-turbo",
 	maxTokens: 500,
 	replaceSelection: true,
@@ -31,14 +28,10 @@ const DEFAULT_SETTINGS: AiAssistantSettings = {
 
 export default class AiAssistantPlugin extends Plugin {
 	settings: AiAssistantSettings;
-	openai: OpenAI;
+	local_llm: LocalLLM;
 
 	build_api() {
-		this.openai = new OpenAI(
-			this.settings.apiKey,
-			this.settings.modelName,
-			this.settings.maxTokens
-		);
+		this.local_llm = new LocalLLM(this.settings.maxTokens);
 	}
 
 	async onload() {
@@ -49,7 +42,7 @@ export default class AiAssistantPlugin extends Plugin {
 			id: "chat-mode",
 			name: "Open Assistant Chat",
 			callback: () => {
-				new ChatModal(this.app, this.openai).open();
+				new ChatModal(this.app, this.local_llm).open();
 			},
 		});
 
@@ -61,13 +54,7 @@ export default class AiAssistantPlugin extends Plugin {
 				new PromptModal(
 					this.app,
 					async (x: { [key: string]: string }) => {
-						let answer = await this.openai.api_call([
-							{
-								role: "user",
-								content:
-									x["prompt_text"] + " : " + selected_text,
-							},
-						]);
+						let answer = await this.local_llm.api_call(x["prompt_text"]);
 						answer = answer!;
 						if (!this.settings.replaceSelection) {
 							answer = selected_text + "\n" + answer.trim();
@@ -77,46 +64,6 @@ export default class AiAssistantPlugin extends Plugin {
 						}
 					},
 					false
-				).open();
-			},
-		});
-
-		this.addCommand({
-			id: "img-generator",
-			name: "Open Image Generator",
-			editorCallback: async (editor: Editor) => {
-				new PromptModal(
-					this.app,
-					async (prompt: { [key: string]: string }) => {
-						const answer = await this.openai.img_api_call(
-							prompt["prompt_text"],
-							prompt["img_size"],
-							parseInt(prompt["num_img"])
-						);
-						if (answer) {
-							const imageModal = new ImageModal(
-								this.app,
-								answer,
-								prompt["prompt_text"],
-								this.settings.imgFolder
-							);
-							imageModal.open();
-						}
-					},
-					true
-				).open();
-			},
-		});
-
-		this.addCommand({
-			id: "speech-to-text",
-			name: "Open Speech to Text",
-			editorCallback: (editor: Editor) => {
-				new SpeechModal(
-					this.app,
-					this.openai,
-					this.settings.language,
-					editor
 				).open();
 			},
 		});
@@ -159,9 +106,7 @@ class AiAssistantSettingTab extends PluginSettingTab {
 			.addText((text) =>
 				text
 					.setPlaceholder("Enter your key here")
-					.setValue(this.plugin.settings.apiKey)
 					.onChange(async (value) => {
-						this.plugin.settings.apiKey = value;
 						await this.plugin.saveSettings();
 						this.plugin.build_api();
 					})
