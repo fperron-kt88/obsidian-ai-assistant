@@ -55,6 +55,7 @@ export class PromptModal extends Modal {
 		const input_prompt = this.modalEl.getElementsByTagName("input")[0];
 		input_prompt.addEventListener("keypress", (evt) => {
 			if (evt.key === "Enter" && this.param_dict["prompt_text"]) {
+				new Notice(this.param_dict["prompt_text"]);
 				this.close();
 				this.onSubmit(this.param_dict);
 			}
@@ -147,26 +148,18 @@ export class ChatModal extends Modal {
 	send_action = async () => {
 		if (this.prompt_text && !this.is_generating_answer) {
 			this.is_generating_answer = true;
-			const prompt = {
-				role: "user",
-				content: this.prompt_text,
-			};
 
-			this.prompt_table.push(prompt, {
-				role: "assistant",
-			});
-
+			const chatPrompt = `USER: ${this.prompt_text}.\n\nASSISTANT:\n`;
 			this.clearModalContent();
 			await this.displayModalContent();
 
-			this.prompt_table.pop();
 			const answers =
 				this.modalEl.getElementsByClassName("chat-div assistant");
 			const view = this.app.workspace.getActiveViewOfType(
 				MarkdownView
-			) as MarkdownView;
+			) as MarkdownView;			
 			const answer = await this.local_llm.api_call(
-				this.prompt_text,
+				chatPrompt,
 				answers[answers.length - 1],
 				view
 			);

@@ -54,7 +54,8 @@ export default class AiAssistantPlugin extends Plugin {
 				new PromptModal(
 					this.app,
 					async (x: { [key: string]: string }) => {
-						let answer = await this.local_llm.api_call(x["prompt_text"]);
+						const chatPrompt = `USER: ${x['prompt_text']}.\n\nASSISTANT:\n`;
+						let answer = await this.local_llm.api_call(chatPrompt);
 						answer = answer!;
 						if (!this.settings.replaceSelection) {
 							answer = selected_text + "\n" + answer.trim();

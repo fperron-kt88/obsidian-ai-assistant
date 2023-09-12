@@ -15,7 +15,7 @@ export class LocalLLM {
 	) => {
 		const streamMode = htmlEl !== undefined;
 
-		try {
+		try {			
 			const response = await fetch(
 				"http://localhost:8000/v1/completions",
 				{
@@ -51,14 +51,15 @@ export class LocalLLM {
 					for (const line of chunk.split("\n")) {
 						const trimmedLine = line.trim();
 
-						if (!trimmedLine || trimmedLine === "data: [DONE]") {
+						if (!trimmedLine || trimmedLine === "data: [DONE]" || !trimmedLine.startsWith("data: ")) {
 							continue;
 						}
+
 
 						const response = JSON.parse(
 							trimmedLine.replace("data: ", "")
 						);
-						const content = response.choices[0].delta.content;
+						const content = response.choices[0].text;
 						if (!content) continue;
 
 						currentText = currentText.concat(content);
@@ -83,7 +84,7 @@ export class LocalLLM {
 			} else {
 				const data = await response.json();
                 // DEBUG : see diffrence between open ai and local llm.
-				return data.choices[0].message.content;
+				return data.choices[0].text;
 			}
 		} catch (err) {
 			new Notice(" ## Local LLM Error: " + err);
