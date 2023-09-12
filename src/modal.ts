@@ -150,6 +150,8 @@ export class ChatModal extends Modal {
 	send_action = async () => {
 		if (this.prompt_text && !this.is_generating_answer) {
 			this.is_generating_answer = true;
+			const input_prompt = this.modalEl.getElementsByTagName("input")[0];
+			input_prompt.disabled = true;
 
 			const chatPrompt = `USER: ${this.prompt_text}.\n\nASSISTANT:\n`;
 			const prompt = {
@@ -229,11 +231,15 @@ export class ChatModal extends Modal {
 			});
 
 		const tokens_field = new Setting(contentEl)
-			.setName("How many tokens would you want:" )
+			.setName("In many tokens do you want your response in? " )
 			.addText((text) => {
-				text.setPlaceholder("Your tokens here").onChange((value) => {
-					this.num_tokens = parseInt(value.trim());
-				});
+					text.setPlaceholder("Your tokens here").onChange((value) => {
+						try {
+							this.num_tokens = parseInt(value.trim());
+						} catch (error) {
+							new Notice("Input error: " + error);
+						}
+					});
 			});
 
 		const input_prompt = this.modalEl.getElementsByTagName("input")[0];
@@ -246,11 +252,17 @@ export class ChatModal extends Modal {
 			}
 		});
 
-		prompt_field.addButton((btn) =>
+		tokens_field.addButton((btn) =>
 			btn
 				.setButtonText("Submit")
 				.setCta()
-				.onClick(() => this.send_action())
+				.onClick(() => {
+					if(!this.is_generating_answer){
+						this.send_action()
+					}else{
+						new Notice("Please wait for the current response to be generated.")
+					}
+				})
 		);
 
 		const clear_button = new Setting(contentEl).addButton((btn) =>
