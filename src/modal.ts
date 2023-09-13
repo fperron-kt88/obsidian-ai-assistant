@@ -187,9 +187,10 @@ export class ChatModal extends Modal {
 				});
 			}
 
+			this.is_generating_answer = false;
 			this.clearModalContent();
 			await this.displayModalContent();
-			this.is_generating_answer = false;
+			
 		}
 	};
 
@@ -247,6 +248,11 @@ export class ChatModal extends Modal {
 		const input_prompt = this.modalEl.getElementsByTagName("input")[0];
 		input_prompt.focus();
 		input_prompt.select();
+		input_prompt.disabled = this.is_generating_answer;
+
+		const token_prompt = this.modalEl.getElementsByTagName("input")[1];
+		token_prompt.disabled = this.is_generating_answer;
+
 
 		input_prompt.addEventListener("keypress", (evt) => {
 			if (evt.key === "Enter") {
@@ -267,6 +273,9 @@ export class ChatModal extends Modal {
 				})
 		);
 
+		const submit_button = this.modalEl.getElementsByTagName("button")[0];
+		submit_button.disabled = this.is_generating_answer;
+
 		const clear_button = new Setting(contentEl).addButton((btn) =>
 			btn.setButtonText("Clear").onClick(() => {
 				this.prompt_table = [];
@@ -284,6 +293,12 @@ export class ChatModal extends Modal {
 				new Notice("Conversation copied to clipboard");
 			})
 		);
+
+		const clr_button = this.modalEl.getElementsByTagName("button")[1];
+		clr_button.disabled = this.is_generating_answer;
+
+		const copy_conv_button = this.modalEl.getElementsByTagName("button")[2];
+		copy_conv_button.disabled = this.is_generating_answer;
 	}
 
 	onOpen() {
