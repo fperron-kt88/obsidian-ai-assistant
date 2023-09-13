@@ -144,7 +144,7 @@ export class ChatModal extends Modal {
 	clearModalContent() {
 		this.contentEl.innerHTML = "";
 		this.prompt_text = "";
-		this.num_tokens = 0;
+		this.num_tokens = -1;
 	}
 
 	send_action = async () => {
@@ -154,6 +154,8 @@ export class ChatModal extends Modal {
 			input_prompt.disabled = true;
 
 			const chatPrompt = `USER: ${this.prompt_text}.\n\nASSISTANT:\n`;
+			const num_tokens = this.num_tokens > 0 ? this.num_tokens : undefined;
+
 			const prompt = {
 				role: "user",
 				content: this.prompt_text,
@@ -171,12 +173,12 @@ export class ChatModal extends Modal {
 				this.modalEl.getElementsByClassName("chat-div assistant");
 			const view = this.app.workspace.getActiveViewOfType(
 				MarkdownView
-			) as MarkdownView;			
+			) as MarkdownView;
 			const answer = await this.local_llm.api_call(
 				chatPrompt,
 				answers[answers.length - 1],
 				view,
-				this.num_tokens > 0 ? this.num_tokens : undefined
+				num_tokens
 			);
 			if (answer) {
 				this.prompt_table.push({

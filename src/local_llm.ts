@@ -12,8 +12,9 @@ export class LocalLLM {
         prompt : string,
         htmlEl?: any, // fix this type issue.
 		view?: MarkdownView,
-		num_tokens : number = this.maxTokens
+		num_tokens ?: number
 	) => {
+		if (!num_tokens) num_tokens = this.maxTokens
 		const streamMode = htmlEl !== undefined;
 
 		try {			
