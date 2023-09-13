@@ -6,7 +6,7 @@ import {
 	PluginSettingTab,
 	Setting,
 } from "obsidian";
-import { ChatModal, PromptModal } from "./modal";
+import { ChatModal, NotificationModal, PromptModal } from "./modal";
 import { LocalLLM } from "./local_llm";
 import { type } from "os";
 interface AiAssistantSettings {
@@ -57,13 +57,19 @@ export default class AiAssistantPlugin extends Plugin {
 					async (x: { [key: string]: string | number | undefined}) => {
 						const chatPrompt = `USER: ${x['prompt_text']}.\n\nASSISTANT:\n`;
 						const num_tokens = x['num_tokens'] && typeof x['num_tokens'] === 'number' && x['num_tokens'] > 0 ? x['num_tokens'] : undefined;
+						// TODO : Show a modal with a loading bar while we wait for the api call.
+						const notif_modal = new NotificationModal(this.app, "Generating answer...");
+						notif_modal.open();
 						let answer = await this.local_llm.api_call(chatPrompt, undefined, undefined, num_tokens);
 						answer = answer!;
+						notif_modal.close();
+
+						const generated_text = "\n<========\n" +  answer.trim() + "\n========>\n";
 						if (!this.settings.replaceSelection) {
-							answer = selected_text + "\n" + answer.trim();
+							answer = selected_text + "\n" + generated_text;
 						}
 						if (answer) {
-							editor.replaceSelection(answer.trim());
+							editor.replaceSelection(generated_text);
 						}
 					},
 				).open();

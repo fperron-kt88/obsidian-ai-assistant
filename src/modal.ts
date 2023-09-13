@@ -77,6 +77,28 @@ export class PromptModal extends Modal {
 	}
 }
 
+export class NotificationModal extends Modal {
+	notif_text: string;
+
+	constructor(app: App, notif_text: string) {
+		super(app);
+		this.notif_text = notif_text;
+	}
+
+	async displayModalContent() {
+		const { contentEl } = this;
+		const container = this.contentEl.createEl("div", {
+			cls: "notification-modal-container",
+		});
+		
+		container.createEl("p", {
+			text: this.notif_text,
+		});
+
+	}
+
+}
+
 export class ChatModal extends Modal {
 	prompt_text: string;
 	num_tokens : number;
