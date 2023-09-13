@@ -30,12 +30,18 @@ export class PromptModal extends Modal {
 	onOpen() {
 		const { contentEl } = this;
 		this.titleEl.setText("What can I do for you?");
+
+		new Setting(contentEl)
+			.setName("Use #doc to refer to selected text on your canvas.")
 		
-		new Setting(contentEl).addText((text) =>
+		new Setting(contentEl)
+		.setName("Type here: ")
+		.addText((text) =>
 			text.onChange((value) => {
 				this.param_dict["prompt_text"] = value.trim();
 			})
 		);
+
 
 		const tokens_field = new Setting(contentEl)
 			.setName("How many tokens do you want to use with your response? " )
