@@ -1,6 +1,6 @@
 {
-	"id": "ai-assistant",
-	"name": "AI Assistant",
+	"id": "llm-assistant",
+	"name": "LLM Assistant",
 	"version": "1.2.0",
 	"minAppVersion": "0.15.0",
 	"description": "AI Assistant plugin for Obsidian",
