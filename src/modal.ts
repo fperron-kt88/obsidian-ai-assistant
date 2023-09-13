@@ -83,18 +83,7 @@ export class NotificationModal extends Modal {
 	constructor(app: App, notif_text: string) {
 		super(app);
 		this.notif_text = notif_text;
-	}
-
-	async displayModalContent() {
-		const { contentEl } = this;
-		const container = this.contentEl.createEl("div", {
-			cls: "notification-modal-container",
-		});
-		
-		container.createEl("p", {
-			text: this.notif_text,
-		});
-
+		this.contentEl.innerHTML = `<div><h1>${this.notif_text}</h1></div>`;
 	}
 
 }
