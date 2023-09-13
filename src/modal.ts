@@ -9,38 +9,48 @@ import {
 	Setting,
 } from "obsidian";
 import { LocalLLM } from "./local_llm";
+import { type } from "os";
 
 export class PromptModal extends Modal {
-	param_dict: { [key: string]: string };
+	param_dict: { [key: string]: string | number | undefined};
 	onSubmit: (input_dict: object) => void;
 	is_img_modal: boolean;
 
 	constructor(
 		app: App,
 		onSubmit: (x: object) => void,
-		is_img_modal: boolean
 	) {
 		super(app);
 		this.onSubmit = onSubmit;
-		this.is_img_modal = is_img_modal;
-		this.param_dict = { img_size: "256x256", num_img: "1" };
-	}
+		this.param_dict = {};
+		this.param_dict['num_tokens'] = -1;
+		this.param_dict['prompt_text'] = "";
+ 	}
 
 	onOpen() {
 		const { contentEl } = this;
-		if (this.is_img_modal) {
-			this.titleEl.setText("What can I generate for you?");
-		} else {
-			this.titleEl.setText("What can I do for you?");
-		}
-
-		const prompt_area = new Setting(contentEl).addText((text) =>
+		this.titleEl.setText("What can I do for you?");
+		
+		new Setting(contentEl).addText((text) =>
 			text.onChange((value) => {
 				this.param_dict["prompt_text"] = value.trim();
 			})
 		);
 
-		prompt_area.addButton((btn) =>
+		const tokens_field = new Setting(contentEl)
+			.setName("How many tokens do you want to use with your response? " )
+			.addText((text) => {
+				text.setPlaceholder("Your tokens here").onChange((value) => {
+					try {
+						const num_tokens = value.trim() === "" ? undefined : parseInt(value.trim());
+						this.param_dict["num_tokens"] = num_tokens
+					} catch (error) {
+						new Notice("Input error: " + error);
+					}
+				})
+			});
+
+		tokens_field.addButton((btn) =>
 			btn
 				.setButtonText("Submit")
 				.setCta()
@@ -55,72 +65,11 @@ export class PromptModal extends Modal {
 		const input_prompt = this.modalEl.getElementsByTagName("input")[0];
 		input_prompt.addEventListener("keypress", (evt) => {
 			if (evt.key === "Enter" && this.param_dict["prompt_text"]) {
-				new Notice(this.param_dict["prompt_text"]);
 				this.close();
 				this.onSubmit(this.param_dict);
 			}
 		});
 
-		if (this.is_img_modal) {
-			const prompt_container = this.contentEl.createEl("div", {
-				cls: "prompt-modal-container",
-			});
-			this.contentEl.append(prompt_container);
-
-			const prompt_left_container = prompt_container.createEl("div", {
-				cls: "prompt-left-container",
-			});
-
-			const desc1 = prompt_left_container.createEl("p", {
-				cls: "description",
-			});
-			desc1.innerText = "Resolution";
-
-			const desc2 = prompt_left_container.createEl("p", {
-				cls: "description",
-			});
-			desc2.innerText = "Num images";
-
-			const prompt_right_container = prompt_container.createEl("div", {
-				cls: "prompt-right-container",
-			});
-
-			const resolution_dropdown =
-				prompt_right_container.createEl("select");
-			const options = ["256x256", "512x512", "1024x1024"];
-			options.forEach((option) => {
-				const optionEl = resolution_dropdown.createEl("option", {
-					text: option,
-				});
-				optionEl.value = option;
-				if (option === this.param_dict["img_size"]) {
-					optionEl.selected = true;
-				}
-			});
-			resolution_dropdown.addEventListener("change", (event) => {
-				const selectElement = event.target as HTMLSelectElement;
-				this.param_dict["img_size"] = selectElement.value;
-			});
-
-			const num_img_dropdown = prompt_right_container.createEl("select");
-			const num_choices = [...Array(10).keys()].map((x) =>
-				(x + 1).toString()
-			);
-
-			num_choices.forEach((option) => {
-				const optionEl = num_img_dropdown.createEl("option", {
-					text: option,
-				});
-				optionEl.value = option;
-				if (option === this.param_dict["num_img"]) {
-					optionEl.selected = true;
-				}
-			});
-			num_img_dropdown.addEventListener("change", (event) => {
-				const selectElement = event.target as HTMLSelectElement;
-				this.param_dict["num_img"] = selectElement.value;
-			});
-		}
 	}
 
 	onClose() {

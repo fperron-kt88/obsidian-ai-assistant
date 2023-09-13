@@ -8,6 +8,7 @@ import {
 } from "obsidian";
 import { ChatModal, PromptModal } from "./modal";
 import { LocalLLM } from "./local_llm";
+import { type } from "os";
 interface AiAssistantSettings {
 	mySetting: string;
 	modelName: string;
@@ -53,9 +54,10 @@ export default class AiAssistantPlugin extends Plugin {
 				const selected_text = editor.getSelection().toString().trim();
 				new PromptModal(
 					this.app,
-					async (x: { [key: string]: string }) => {
+					async (x: { [key: string]: string | number | undefined}) => {
 						const chatPrompt = `USER: ${x['prompt_text']}.\n\nASSISTANT:\n`;
-						let answer = await this.local_llm.api_call(chatPrompt);
+						const num_tokens = x['num_tokens'] && typeof x['num_tokens'] === 'number' && x['num_tokens'] > 0 ? x['num_tokens'] : undefined;
+						let answer = await this.local_llm.api_call(chatPrompt, undefined, undefined, num_tokens);
 						answer = answer!;
 						if (!this.settings.replaceSelection) {
 							answer = selected_text + "\n" + answer.trim();
@@ -64,7 +66,6 @@ export default class AiAssistantPlugin extends Plugin {
 							editor.replaceSelection(answer.trim());
 						}
 					},
-					false
 				).open();
 			},
 		});
