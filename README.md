@@ -1,13 +1,54 @@
-# Obsidian AI Assistant
 
-Simple plugin to enable interactions with AI models such as [OpenAI ChatGPT](https://openai.com/blog/chatgpt), [OpenAI DALL·E2](https://openai.com/product/dall-e-2), [OpenAI Whisper](https://openai.com/research/whisper) directly from your [Obsidian](https://obsidian.md/) notes.
+# Local AI Obsidian AI Assistant
+This project is a fork of [Obsidian AI Assistant](https://github.com/qgrail/obsidian-ai-assistant).
 
-The current available features of this plugin are:
-- 🤖 Text assistant with GPT-3.5 and GPT-4,
-- 🖼 Image generation with DALL·E2,
-- 🗣 Speech to text with Whisper.
+Unlike Obsidian AI Assistant, this simple plugin enables interactions with local AI Models. For that and many other reasons, this plugin only supports text generation for now.
 
-## How to use
+## Set up.
+Requisites:
+    <ul>
+        <li>node</li>
+        <li>npm</li>
+        <li>python</li>
+    </ul> 
+
+There are 3 simple (😜) steps to setting up this plugin.
+
+
+
+1. Install and Run your model
+    - Download any model in `GGUF` format since the backend `[llama-cpp-python](https://github.com/abetlen/llama-cpp-python)` uses `GGUF`. 
+    - Place this model in a folder of your choice. e.g `/home/user/.gguf-models`
+    - Set a model environment variable `export MODEL=/home/user/.gguf-models/llama2-13b-Q4_K_M.gguf`
+    - run the server that will serve requests and provide model answers `python3 -m llama_cpp.server`
+    - leave it running while you are using it.
+    - To test that this is working, you can use `curl`
+    ```bash
+    curl -X 'POST' \
+    'http://localhost:8000/v1/completions' \
+    -H 'accept: application/json' \
+    -H 'Content-Type: application/json' \
+    -d '{
+    "prompt": "USER: What is Obsidian.md?\n\nASSISTANT:\n",
+    "stream": false, "max_tokens": 256,
+    "stop": []
+    }'
+    ```
+    - the response should be in this or a similar format
+    ```bash
+    {"id":"cmpl-5641e188-47f4-43bf-a6fa-4bd2fb7313b6","object":"text_completion","created":1694562948,"model":"/Users/ngacho/Desktop/everything-code/local-llm/models/Llama2-13B-MegaCode2-OASST-GGUF/llama2-13b-megacode2-oasst.Q4_K_M.gguf","choices":[{"text":"My name is Open Assistant and I am an","index":0,"logprobs":null,"finish_reason":"length"}],"usage":{"prompt_tokens":16,"completion_tokens":10,"total_tokens":26}}
+    ```
+
+2. Install the plugin in the Obsidian Vault folder
+    - Navigate to your obsidian vaults plugin folder (It'll look like something like this `HOME/MyObsidian/.obsidian/plugins`)
+        - You can also find this folder from Settings (shortcut : cmd + ,)  
+        - open the terminal at this folder
+        - git clone [repo](https://github.com/ngacho/obsidian-ai-assistant)
+        - run `npm i && npm audit fix`
+        - run `npm run build`
+        - update the url of the post request to the local server where your model is listening from. so for instance mine is running on `http://localhost:8000/v1/completions`
+
+3. Open Obsidian > Settings > Community Plugins > Toggle AI Assistant
 
 ### 🤖 Text Assistant
 
@@ -29,53 +70,5 @@ You can also copy the whole conversation.
 Prompt mode allows you to use a selected piece of text from your note as input for the assistant.
 From here you can ask the assistant to translate, summarize, generate code ect.
 
-### 🖼 Image Assistant
-Generate images for your notes.\
-In the result window, select the images you want to keep.\
-They will automatically be downloaded to your vault and their path copied to your clipboard.\
-Then, you can paste the images anywhere in your notes.
-
-<img src="gifs/image_generator.gif" alt= “” width="55%">
-
-### 🗣 Speech to Text
-Launch the Speech to Text command and start dictating your notes.\
-The transcript will be immediately added to your note at your cursor location.
-
-
-## Settings
-### Text Assistant
-- **Model choice**: choice of the text model. Currently `gpt-3.5-turbo` and `gpt-4` are supported. (There is still a 
-[waitlist](https://openai.com/waitlist/gpt-4-api) to access GPT-4. If you have not been invited, GPT-4 will not work here.)
-- **Maximum number of tokens** in the generated answer
-- **Replace or Add below**: In prompt mode, after having selected text from your note and enter your prompt, 
-you can decide to replace your text by the assistant answer or to paste it bellow.
-
-### Image Assistant
-- The model used is **DALL·E2**,
-- Change the default folder of generated images. 
-
-### Speech to Text
-- The model used is **Whisper**,
-- You can change the default **language** to improve the accuracy and latency of the model. If you leave it empty, the model will automatically detect it.
-
-
-## How to install
-
-#### From the community plugins
-
-You can install the [AI Assistant](https://obsidian.md/plugins?id=ai-assistant) directly from the Obsidian community plugins.
-
-#### Get latest version from git
-1. `cd path/to/vault/.obsidian/plugins`
-2. `git clone https://github.com/qgrail/obsidian-ai-assistant.git && cd obsidian-ai-assistant`
-3. `npm install && npm run build`
-4. Open **Obsidian Preferences** -> **Community plugins**
-5. Refresh Installed plugins and activate AI Assistant.
-
-## Requirements
-
-To use this plugin, you need an official API key from [OpenAI](https://platform.openai.com/account/api-keys).
-
 ## Limitations
-
 This plugin is currently not compatible with iPadOS.

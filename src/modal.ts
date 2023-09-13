@@ -8,6 +8,7 @@ import {
 	requestUrl,
 	Setting,
 } from "obsidian";
+import { LocalLLM } from "./local_llm";
 
 export class PromptModal extends Modal {
 	param_dict: { [key: string]: string };
@@ -54,6 +55,7 @@ export class PromptModal extends Modal {
 		const input_prompt = this.modalEl.getElementsByTagName("input")[0];
 		input_prompt.addEventListener("keypress", (evt) => {
 			if (evt.key === "Enter" && this.param_dict["prompt_text"]) {
+				new Notice(this.param_dict["prompt_text"]);
 				this.close();
 				this.onSubmit(this.param_dict);
 			}
@@ -128,24 +130,32 @@ export class PromptModal extends Modal {
 
 export class ChatModal extends Modal {
 	prompt_text: string;
+	num_tokens : number;
 	prompt_table: { [key: string]: string }[] = [];
-	openai: any;
+	local_llm: LocalLLM;
 	is_generating_answer: boolean;
 
-	constructor(app: App, openai: any) {
+	constructor(app: App, local_llm: any) {
 		super(app);
-		this.openai = openai;
+		this.local_llm = local_llm;
 		this.is_generating_answer = false;
 	}
 
 	clearModalContent() {
 		this.contentEl.innerHTML = "";
 		this.prompt_text = "";
+		this.num_tokens = -1;
 	}
 
 	send_action = async () => {
 		if (this.prompt_text && !this.is_generating_answer) {
 			this.is_generating_answer = true;
+			const input_prompt = this.modalEl.getElementsByTagName("input")[0];
+			input_prompt.disabled = true;
+
+			const chatPrompt = `USER: ${this.prompt_text}.\n\nASSISTANT:\n`;
+			const num_tokens = this.num_tokens > 0 ? this.num_tokens : undefined;
+
 			const prompt = {
 				role: "user",
 				content: this.prompt_text,
@@ -164,10 +174,11 @@ export class ChatModal extends Modal {
 			const view = this.app.workspace.getActiveViewOfType(
 				MarkdownView
 			) as MarkdownView;
-			const answer = await this.openai.api_call(
-				this.prompt_table,
+			const answer = await this.local_llm.api_call(
+				chatPrompt,
 				answers[answers.length - 1],
-				view
+				view,
+				num_tokens
 			);
 			if (answer) {
 				this.prompt_table.push({
@@ -221,6 +232,18 @@ export class ChatModal extends Modal {
 				});
 			});
 
+		const tokens_field = new Setting(contentEl)
+			.setName("In many tokens do you want your response in? " )
+			.addText((text) => {
+					text.setPlaceholder("Your tokens here").onChange((value) => {
+						try {
+							this.num_tokens = parseInt(value.trim());
+						} catch (error) {
+							new Notice("Input error: " + error);
+						}
+					});
+			});
+
 		const input_prompt = this.modalEl.getElementsByTagName("input")[0];
 		input_prompt.focus();
 		input_prompt.select();
@@ -231,11 +254,17 @@ export class ChatModal extends Modal {
 			}
 		});
 
-		prompt_field.addButton((btn) =>
+		tokens_field.addButton((btn) =>
 			btn
 				.setButtonText("Submit")
 				.setCta()
-				.onClick(() => this.send_action())
+				.onClick(() => {
+					if(!this.is_generating_answer){
+						this.send_action()
+					}else{
+						new Notice("Please wait for the current response to be generated.")
+					}
+				})
 		);
 
 		const clear_button = new Setting(contentEl).addButton((btn) =>
@@ -263,229 +292,6 @@ export class ChatModal extends Modal {
 	}
 
 	onClose() {
-		this.contentEl.empty();
-	}
-}
-
-export class ImageModal extends Modal {
-	imageUrls: string[];
-	selectedImageUrls: string[];
-	assetFolder: string;
-
-	constructor(
-		app: App,
-		imageUrls: string[],
-		title: string,
-		assetFolder: string
-	) {
-		super(app);
-		this.imageUrls = imageUrls;
-		this.selectedImageUrls = [];
-		this.titleEl.setText(title);
-		this.assetFolder = assetFolder;
-	}
-
-	onOpen() {
-		const container = this.contentEl.createEl("div", {
-			cls: "image-modal-container",
-		});
-
-		for (const imageUrl of this.imageUrls) {
-			const imgWrapper = container.createEl("div", {
-				cls: "image-modal-wrapper",
-			});
-
-			const img = imgWrapper.createEl("img", {
-				cls: "image-modal-image",
-			});
-			img.src = imageUrl;
-
-			img.addEventListener("click", async () => {
-				if (this.selectedImageUrls.includes(imageUrl)) {
-					this.selectedImageUrls = this.selectedImageUrls.filter(
-						(url) => url !== imageUrl
-					);
-					img.style.border = "none";
-				} else {
-					this.selectedImageUrls.push(imageUrl);
-					img.style.border = "2px solid blue";
-				}
-				new Notice("Images copied to clipboard");
-			});
-		}
-	}
-	downloadImage = async (url: string, path: string) => {
-		const response = await requestUrl({ url: url });
-		await this.app.vault.adapter.writeBinary(path, response.arrayBuffer);
-	};
-
-	getImageName = (url: string) => {
-		return url.split("/").pop() + ".png";
-	};
-
-	saveImagesToVault = async (imageUrls: string[], folderPath: string) => {
-		for (const url of imageUrls) {
-			const imageName = this.getImageName(url); // Extract the image name from the URL
-			const savePath = folderPath + "/" + imageName; // Construct the save path in your vault
-			await this.downloadImage(url, savePath);
-		}
-	};
-
-	async onClose() {
-		if (this.selectedImageUrls.length > 0) {
-			if (!app.vault.getAbstractFileByPath(this.assetFolder)) {
-				try {
-					await app.vault.createFolder(this.assetFolder);
-				} catch (error) {
-					console.error("Error creating directory:", error);
-				}
-			}
-			try {
-				await this.saveImagesToVault(
-					this.selectedImageUrls,
-					this.assetFolder
-				);
-			} catch (e) {
-				new Notice("Error while downloading images");
-			}
-			try {
-				await navigator.clipboard.writeText(
-					this.selectedImageUrls
-						.map((x) => `![](${this.getImageName(x)})`)
-						.join("\n\n") + "\n"
-				);
-			} catch (e) {
-				new Notice("Error while copying images to clipboard");
-			}
-		}
-		this.contentEl.empty();
-	}
-}
-
-export class SpeechModal extends Modal {
-	recorder: MediaRecorder;
-	gumStream: MediaStream;
-	openai: any;
-	editor: Editor;
-	is_cancelled: boolean;
-	language: string;
-
-	constructor(app: App, openai: any, language: string, editor: Editor) {
-		super(app);
-		this.openai = openai;
-		this.language = language;
-		this.editor = editor;
-		this.is_cancelled = false;
-	}
-
-	stopRecording = () => {
-		this.recorder.stop();
-		//stop microphone access
-		if (this.gumStream) {
-			this.gumStream.getAudioTracks()[0].stop();
-		}
-	};
-
-	start_recording = async (
-		constraints: MediaStreamConstraints,
-		extension: string
-	) => {
-		try {
-			let chunks: Blob[] = [];
-			this.gumStream = await navigator.mediaDevices.getUserMedia(
-				constraints
-			);
-
-			const options = {
-				audioBitsPerSecond: 256000,
-				mimeType: "audio/" + extension + ";codecs=opus",
-			};
-			this.recorder = new MediaRecorder(this.gumStream, options);
-
-			this.recorder.ondataavailable = async (e: BlobEvent) => {
-				chunks.push(e.data);
-				if (this.recorder.state == "inactive" && !this.is_cancelled) {
-					const audio = new File(chunks, "tmp." + extension, {
-						type: "audio/" + extension,
-					});
-					const answer = await this.openai.whisper_api_call(
-						audio,
-						this.language
-					);
-
-					if (answer) {
-						this.editor.replaceRange(
-							answer,
-							this.editor.getCursor()
-						);
-						const newPos = {
-							line: this.editor.getCursor().line,
-							ch: this.editor.getCursor().ch + answer.length,
-						};
-						this.editor.setCursor(newPos.line, newPos.ch);
-					}
-					this.close();
-				}
-			};
-			this.recorder.start(1000);
-			chunks = [];
-		} catch (err) {
-			new Notice(err);
-		}
-	};
-
-	async onOpen() {
-		const { contentEl } = this;
-		this.titleEl.setText("Speech to Text");
-
-		let extension: string;
-		if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
-			extension = "webm";
-		} else {
-			extension = "ogg";
-		}
-
-		const constraints = { audio: true };
-
-		const button_container = contentEl.createEl("div", {
-			cls: "speech-modal-container",
-		});
-
-		const record_button = button_container.createEl("button", {
-			text: "Start Recording",
-			cls: "record-button",
-		});
-
-		record_button.addEventListener("click", () => {
-			if (this.recorder && this.recorder.state === "recording") {
-				new Notice("Stop recording");
-				record_button.disabled = true;
-				this.titleEl.setText("Processing record");
-				this.stopRecording();
-			} else {
-				new Notice("Start recording");
-				record_button.setText("Stop Recording");
-				record_button.style.borderColor = "red";
-				this.titleEl.setText("Listening...");
-				this.start_recording(constraints, extension);
-			}
-		});
-
-		const cancel_button = button_container.createEl("button", {
-			text: "Cancel",
-		});
-
-		cancel_button.addEventListener("click", (e) => {
-			this.is_cancelled = true;
-			this.close();
-		});
-	}
-
-	async onClose() {
-		if (this.recorder && this.recorder.state === "recording") {
-			new Notice("Stop recording");
-			this.stopRecording();
-		}
 		this.contentEl.empty();
 	}
 }
