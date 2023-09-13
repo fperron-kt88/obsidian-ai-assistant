@@ -101,35 +101,7 @@ class AiAssistantSettingTab extends PluginSettingTab {
 		containerEl.empty();
 		containerEl.createEl("h2", { text: "Settings for my AI assistant." });
 
-		new Setting(containerEl)
-			.setName("API Key")
-			.setDesc("OpenAI API Key")
-			.addText((text) =>
-				text
-					.setPlaceholder("Enter your key here")
-					.onChange(async (value) => {
-						await this.plugin.saveSettings();
-						this.plugin.build_api();
-					})
-			);
 		containerEl.createEl("h3", { text: "Text Assistant" });
-
-		new Setting(containerEl)
-			.setName("Model Name")
-			.setDesc("Select your model")
-			.addDropdown((dropdown) =>
-				dropdown
-					.addOptions({
-						"gpt-3.5-turbo": "gpt-3.5-turbo",
-						"gpt-4": "gpt-4",
-					})
-					.setValue(this.plugin.settings.modelName)
-					.onChange(async (value) => {
-						this.plugin.settings.modelName = value;
-						await this.plugin.saveSettings();
-						this.plugin.build_api();
-					})
-			);
 
 		new Setting(containerEl)
 			.setName("Max Tokens")
@@ -162,36 +134,5 @@ class AiAssistantSettingTab extends PluginSettingTab {
 						this.plugin.build_api();
 					});
 			});
-		containerEl.createEl("h3", { text: "Image Assistant" });
-		new Setting(containerEl)
-			.setName("Default location for generated images")
-			.setDesc("Where generated images are stored.")
-			.addText((text) =>
-				text
-					.setPlaceholder("Enter the path to you image folder")
-					.setValue(this.plugin.settings.imgFolder)
-					.onChange(async (value) => {
-						const path = value.replace(/\/+$/, "");
-						if (path) {
-							this.plugin.settings.imgFolder = path;
-							await this.plugin.saveSettings();
-						} else {
-							new Notice("Image folder cannot be empty");
-						}
-					})
-			);
-
-		containerEl.createEl("h3", { text: "Speech to Text" });
-		new Setting(containerEl)
-			.setName("The language of the input audio")
-			.setDesc("Using ISO-639-1 format (en, fr, de, ...)")
-			.addText((text) =>
-				text
-					.setValue(this.plugin.settings.language)
-					.onChange(async (value) => {
-						this.plugin.settings.language = value;
-						await this.plugin.saveSettings();
-					})
-			);
 	}
 }
