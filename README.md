@@ -17,7 +17,7 @@ There are 3 simple (😜) steps to setting up this plugin.
 
 
 1. Install and Run your model
-    - Download any model in `GGUF` format since the backend `[llama-cpp-python](https://github.com/abetlen/llama-cpp-python)` uses `GGUF`. 
+    - Download any model in `GGUF` format since the backend [llama-cpp-python](https://github.com/abetlen/llama-cpp-python) uses `GGUF`. 
     - Place this model in a folder of your choice. e.g `/home/user/.gguf-models`
     - Set a model environment variable `export MODEL=/home/user/.gguf-models/llama2-13b-Q4_K_M.gguf`
     - run the server that will serve requests and provide model answers `python3 -m llama_cpp.server`
@@ -48,7 +48,7 @@ There are 3 simple (😜) steps to setting up this plugin.
         - run `npm run build`
         - update the url of the post request to the local server where your model is listening from. so for instance mine is running on `http://localhost:8000/v1/completions`
 
-3. Open Obsidian > Settings > Community Plugins > Toggle AI Assistant
+3. Open Obsidian > Settings > Community Plugins > Toggle LLM Assistant
 
 ### 🤖 Text Assistant
 
