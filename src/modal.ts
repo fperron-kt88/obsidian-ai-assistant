@@ -228,7 +228,7 @@ export class ChatModal extends Modal {
 
 		tokens_field.addButton((btn) =>
 			btn
-				.setButtonText("Submit ici fxfxfx")
+				.setButtonText("Submit")
 				.setCta()
 				.onClick(() => {
 					if(!this.is_generating_answer){
