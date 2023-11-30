@@ -19,7 +19,7 @@ export class LocalLLM {
 
 		try {			
 			const response = await fetch(
-				"http://localhost:8000/v1/completions",
+				"http://100.109.91.52:3001/v1/completions",
 				{
 					method: "POST",
 					headers: {
@@ -89,7 +89,7 @@ export class LocalLLM {
 				return data.choices[0].text;
 			}
 		} catch (err) {
-			new Notice(" ## Local LLM Error: " + err);
+			new Notice(" ## Local LLM Error:" + err);
 		}
 	};
 
